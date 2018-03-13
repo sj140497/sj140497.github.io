@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<title>W3.CSS Template</title>
+<title>Q5040916</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
@@ -9,7 +9,7 @@
 body,h1 {font-family: "Raleway", sans-serif}
 body, html {height: 100%}
 .bgimg {
-    background-image: url('https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/AdobeStock_64819783.jpeg');
+    background-image: url('https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/hUPIsqu.jpg');
     min-height: 100%;
     background-position: center;
     background-size: cover;
@@ -23,7 +23,52 @@ body, html {height: 100%}
     <h1 class="w3-jumbo w3-animate-top">Sean Johnson: Final Year Project</h1>
     <hr class="w3-border-grey" style="margin:auto;width:40%">
     <p class="w3-large w3-center">Digital Audio Workshop</p>
+    <button id="songControl" onclick="songControls()"> Pause </button>
   </div>
 </div>
+    <script>
+        navigator.getUserMedia = (navigator.getUserMedia ||
+                          navigator.webkitGetUserMedia ||
+                          navigator.mozGetUserMedia ||
+                          navigator.msGetUserMedia);
+                  
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        var voiceSelect = document.getElementById("voice");
+        var source;
+        var stream;
+
+        request = new XMLHttpRequest();
+        request.open('GET', 'https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/4062.mp3', true);
+        request.responseType = 'arraybuffer';
+
+        request.onload = function () {
+        var undecodedAudio = request.response;
+
+        ctx.decodeAudioData(undecodedAudio, function (buffer) {
+            var sourceBuffer = ctx.createBufferSource();
+
+            sourceBuffer.buffer = buffer;
+            sourceBuffer.connect(ctx.destination);
+            sourceBuffer.start(ctx.currentTime);
+        });
+    };
+
+        request.send();
+
+                
+        
+        function songControls() {
+            if(ctx.state === 'running') {
+                ctx.suspend().then(function() {
+                    document.getElementById("songControl").textContent = "Resume";
+                });
+            } else if(ctx.state === 'suspended') {
+                ctx.resume().then(function() {
+                    document.getElementById("songControl").textContent = "Pause";
+                });
+            }
+        }
+    </script>
 </body>
 </html>
+
