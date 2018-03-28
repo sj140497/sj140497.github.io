@@ -22,12 +22,13 @@ body, html {height: 100%}
   <div class="w3-display-middle">
     <h1 class="w3-jumbo w3-animate-top">Sean Johnson: Final Year Project</h1>
     <hr class="w3-border-grey" style="margin:auto;width:40%">
-    <p class="w3-large w3-center">Digital Audio Workshop</p>
+    <p class="w3-large w3-center">Digital Audio Workstation</p>
     <button id="songControl" onclick="songControls()"> Pause </button>
     <form>
         <p>Volume</p><input type="range" name="volumeControl" min="0" max="1" step="any" onchange="changeVolume(this.value);">
-        <p>Lowshelf</p><input type="range" name="biquadControl" min="40" max="440" step="any" onchange="changeBiquad(this.value);">
-        <p>Distortion</p><input type="range" name="distortionControl" min="0" max="300" step="any" onchange="changeDistortion(this.value);">
+        <p>Lowshelf</p><input type="range" name="biquadControl" min="40" max="440" value = "0" step="any" onchange="changeBiquad(this.value);">
+        <p>Distortion <input type="checkbox" name="distortion" id="distortionCheckbox"> </p>
+        <p>Delay</p><input type="range" name="delayControl" min="0" max="1" value = "0" step="any" onchange="changeDelay(this.value);">
     </form>
   </div>
 </div>
@@ -52,11 +53,31 @@ body, html {height: 100%}
         }
         return curve;
       };
-        
+      
         var gainNode = ctx.createGain();
         gainNode.gain.value = 0.5;
         gainNode.connect(ctx.destination);
+      
+        //Delay Test, need to create new instances of gain, biquadfilter and delay
+        var delayGain = ctx.createGain();
+        delayGain.gain.value = 0;
+       
+        var delayFeedback = ctx.createGain();
+        delayFeedback.gain.value = 0.8; //0.8
         
+        var delay = ctx.createDelay();
+        delay.delayTime.value = 0.5; //0.5
+            
+        var delayFilter = ctx.createBiquadFilter();
+        delayFilter.frequency.value = 1000;
+              
+        delayFeedback.connect(delayFilter);
+        delay.connect(delayFeedback);
+        delayFilter.connect(delay);
+        delay.connect(delayGain);
+        delayGain.connect(gainNode);
+        //End of creating delay variables
+       
         var analyser = ctx.createAnalyser();
         analyser.minDecibels = -90;
         analyser.maxDecibels = -10;
@@ -65,39 +86,36 @@ body, html {height: 100%}
         var distortion = ctx.createWaveShaper();
         distortion.connect(gainNode);
         
-        var biquadFilter = ctx.createBiquadFilter();
-        biquadFilter.type = "lowshelf";
-        biquadFilter.frequency.value = 40;
-        biquadFilter.gain.value = 25;
-        biquadFilter.connect(distortion);
+        var lowshelfFilter = ctx.createBiquadFilter();
+        lowshelfFilter.type = "lowshelf";
+        lowshelfFilter.frequency.value = 40;
+        lowshelfFilter.gain.value = 25;
+        lowshelfFilter.connect(distortion);
         
         var convolver = ctx.createConvolver();
-        
-        
       
-      //https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/4062.mp3
-      
-      //Hardcoding a single song in for now until I figure out multiple songs
-    var soundSource, songBuffer;
-    request = new XMLHttpRequest();
-    request.open('GET', 'https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/4062.mp3', true);
-    request.responseType = 'arraybuffer';
+        //Hardcoding a single song in for now until I figure out multiple songs
+        var soundSource, songBuffer;
+        request = new XMLHttpRequest();
+        request.open('GET', 'https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/4062.mp3', true);
+        request.responseType = 'arraybuffer';
 
-    request.onload = function() {
-      var audioData = request.response;
+        request.onload = function() {
+          var audioData = request.response;
 
-      ctx.decodeAudioData(audioData, function(buffer) {
-          songBuffer = buffer;
-          soundSource = ctx.createBufferSource();
-          soundSource.buffer = songBuffer;
-          soundSource.connect(biquadFilter);
-          soundSource.loop = true;
-          soundSource.start();
-        }, function(e){ console.log("Error with decoding audio data" + e.err);});
-    };
+          ctx.decodeAudioData(audioData, function(buffer) {
+              songBuffer = buffer;
+              soundSource = ctx.createBufferSource();
+              soundSource.buffer = songBuffer;
+              soundSource.connect(lowshelfFilter);
+              soundSource.connect(delay);
+              soundSource.loop = true;
+              soundSource.start();
+            }, function(e){ console.log("Error with decoding audio data" + e.err);});
+        };
 
-    request.send();  
-    //End of playing single song
+        request.send();  
+        //End of playing single song
 
         //Function to pause and resume current song onclick of button        
         function songControls() {
@@ -119,37 +137,23 @@ body, html {height: 100%}
         }
         
         function changeBiquad(val) {
-            biquadFilter.frequency.value = val;
+            lowshelfFilter.frequency.value = val;
         }
         
-        function changeDistortion(val) {
-            distortion.curve = makeDistortionCurve(val);
+        function changeDelay(val) {
+            delayGain.gain.value = val;
+        }
+       
+        distortion.oversample = '4x';
+        distortionCheckbox = document.querySelector("#distortionCheckbox");
+        distortionCheckbox.onchange = function() {
+            if(distortionCheckbox.checked) {
+                distortion.curve = makeDistortionCurve(50);
+            }
+            else {
+                distortion.curve = makeDistortionCurve(0);
+            }
         }
     </script>
 </body>
 </html>
-
-
-
-<!--function voiceChange() {
-
-        distortion.oversample = '4x';
-        biquadFilter.gain.value = 0;
-        convolver.buffer = undefined;
-
-        var voiceSetting = voiceSelect.value;
-        console.log(voiceSetting);
-
-        if(voiceSetting == "distortion") {
-          distortion.curve = makeDistortionCurve(400);
-        } else if(voiceSetting == "convolver") {
-          //convolver.buffer = concertHallBuffer;
-          convolver.buffer = buffer;
-        } else if(voiceSetting == "biquad") {
-          biquadFilter.type = "lowshelf";
-          biquadFilter.frequency.value = 1000;
-          biquadFilter.gain.value = 25;
-        } else if(voiceSetting == "off") {
-          console.log("Voice settings turned off");
-        }
-      }-->
