@@ -20,9 +20,11 @@ body, html {height: 100%}
   <div class="w3-display-topleft w3-padding-large w3-xlarge">
   </div>
   <div class="w3-display-middle">
+      <div class="wrapper">
     <h1 class="w3-jumbo w3-animate-top">Sean Johnson: Final Year Project</h1>
     <hr class="w3-border-grey" style="margin:auto;width:40%">
     <p class="w3-large w3-center">Digital Audio Workstation</p>
+    <canvas class="visualizer" width="640" height="100"></canvas> 
     <button id="songControl" onclick="songControls()"> Pause </button>
     <form>
         <p>Volume</p><input type="range" name="volumeControl" min="0" max="1" step="any" onchange="changeVolume(this.value);">
@@ -30,6 +32,7 @@ body, html {height: 100%}
         <p>Distortion <input type="checkbox" name="distortion" id="distortionCheckbox"> </p>
         <p>Delay</p><input type="range" name="delayControl" min="0" max="1" value = "0" step="any" onchange="changeDelay(this.value);">
     </form>
+      </div>
   </div>
 </div>
     <script>
@@ -56,7 +59,7 @@ body, html {height: 100%}
       
         var gainNode = ctx.createGain();
         gainNode.gain.value = 0.5;
-        gainNode.connect(ctx.destination);
+        
       
         //Delay Test, need to create new instances of gain, biquadfilter and delay
         var delayGain = ctx.createGain();
@@ -70,18 +73,21 @@ body, html {height: 100%}
             
         var delayFilter = ctx.createBiquadFilter();
         delayFilter.frequency.value = 1000;
+        
+        var analyser = ctx.createAnalyser();
+        analyser.minDecibels = -90;
+        analyser.maxDecibels = -10;
+        analyser.smoothingTimeConstant = 0.85;
               
         delayFeedback.connect(delayFilter);
         delay.connect(delayFeedback);
         delayFilter.connect(delay);
         delay.connect(delayGain);
         delayGain.connect(gainNode);
+        gainNode.connect(analyser);
+        analyser.connect(ctx.destination);
         //End of creating delay variables
        
-        var analyser = ctx.createAnalyser();
-        analyser.minDecibels = -90;
-        analyser.maxDecibels = -10;
-        analyser.smoothingTimeConstant = 0.85;
         
         var distortion = ctx.createWaveShaper();
         distortion.connect(gainNode);
@@ -91,8 +97,6 @@ body, html {height: 100%}
         lowshelfFilter.frequency.value = 40;
         lowshelfFilter.gain.value = 25;
         lowshelfFilter.connect(distortion);
-        
-        var convolver = ctx.createConvolver();
       
         //Hardcoding a single song in for now until I figure out multiple songs
         var soundSource, songBuffer;
@@ -111,11 +115,73 @@ body, html {height: 100%}
               soundSource.connect(delay);
               soundSource.loop = true;
               soundSource.start();
+              visualize();
             }, function(e){ console.log("Error with decoding audio data" + e.err);});
         };
 
         request.send();  
         //End of playing single song
+        
+        var canvas = document.querySelector('.visualizer');
+        var canvasCtx = canvas.getContext("2d");
+
+        var intendedWidth = document.querySelector('.wrapper').clientWidth;
+
+        canvas.setAttribute('width',intendedWidth);
+
+        var drawVisual;
+        
+        function visualize() {
+        WIDTH = canvas.width;
+        HEIGHT = canvas.height;
+      
+
+        analyser.fftSize = 2048;
+        var bufferLength = analyser.fftSize;
+        console.log(bufferLength);
+        console.log("visualize");
+        var dataArray = new Uint8Array(bufferLength);
+
+        canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+
+        var draw = function() {
+            console.log("draw call");
+
+          drawVisual = requestAnimationFrame(draw);
+
+          analyser.getByteTimeDomainData(dataArray);
+
+          canvasCtx.fillStyle = 'rgb(200, 200, 200)';
+          canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+
+          canvasCtx.lineWidth = 2;
+          canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
+
+          canvasCtx.beginPath();
+
+          var sliceWidth = WIDTH * 1.0 / bufferLength;
+          var x = 0;
+
+          for(var i = 0; i < bufferLength; i++) {
+
+            var v = dataArray[i] / 128.0;
+            var y = v * HEIGHT/2;
+
+            if(i === 0) {
+              canvasCtx.moveTo(x, y);
+            } else {
+              canvasCtx.lineTo(x, y);
+            }
+
+            x += sliceWidth;
+          }
+
+          canvasCtx.lineTo(canvas.width, canvas.height/2);
+          canvasCtx.stroke();
+        };
+        draw();
+    }
+
 
         //Function to pause and resume current song onclick of button        
         function songControls() {
