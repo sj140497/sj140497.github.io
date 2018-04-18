@@ -24,14 +24,18 @@ body, html {height: 100%}
     <h1 class="w3-jumbo w3-animate-top">Sean Johnson: Final Year Project</h1>
     <hr class="w3-border-grey" style="margin:auto;width:40%">
     <p class="w3-large w3-center">Digital Audio Workstation</p>
-    <canvas class="visualizer" width="640" height="100"></canvas> 
+    <p class="w3-center">Track 1
+    <canvas class="visualTrack1" width="640" height="100"></canvas>
+    Volume <input type="range" name="volumeControl" min="0" max="1" step="any" onchange="t1ChangeVolume(this.value);"> <br />
+    Bass Boost <input type="range" name="biquadControl" min="40" max="440" value = "0" step="any" onchange="t1ChangeBiquad(this.value);"> <br />
+    </p>
+    <p class="w3-center">Track 2
+    <canvas class="visualTrack2" width="640" height="100"></canvas>
+    Volume <input type="range" name="volumeControl2" min="0" max="1" step="any" onchange="t2ChangeVolume(this.value);"> <br />
+    Bass Boost <input type="range" name="biquadControl2" min="40" max="440" value = "0" step="any" onchange="t2ChangeBiquad(this.value);"> <br />
+    </p>
+    <canvas class="visualTrack2" width="640" height="100"></canvas> 
     <button id="songControl" onclick="songControls()"> Pause </button>
-    <form>
-        <p>Volume</p><input type="range" name="volumeControl" min="0" max="1" step="any" onchange="changeVolume(this.value);">
-        <p>Lowshelf</p><input type="range" name="biquadControl" min="40" max="440" value = "0" step="any" onchange="changeBiquad(this.value);">
-        <p>Distortion <input type="checkbox" name="distortion" id="distortionCheckbox"> </p>
-        <p>Delay</p><input type="range" name="delayControl" min="0" max="1" value = "0" step="any" onchange="changeDelay(this.value);">
-    </form>
       </div>
   </div>
 </div>
@@ -57,81 +61,110 @@ body, html {height: 100%}
         return curve;
       };
       
-        var gainNode = ctx.createGain();
-        gainNode.gain.value = 0.5;
-        
       
-        //Delay Test, need to create new instances of gain, biquadfilter and delay
-        var delayGain = ctx.createGain();
-        delayGain.gain.value = 0;
-       
-        var delayFeedback = ctx.createGain();
-        delayFeedback.gain.value = 0.8; //0.8
+      //Setting up nodes for track 1----------------------------
+        var t1GainNode = ctx.createGain();
+        t1GainNode.gain.value = 0.5;
         
-        var delay = ctx.createDelay();
-        delay.delayTime.value = 0.5; //0.5
-            
-        var delayFilter = ctx.createBiquadFilter();
-        delayFilter.frequency.value = 1000;
+        var t1Analyser = ctx.createAnalyser();
+        t1Analyser.minDecibels = -90;
+        t1Analyser.maxDecibels = -10;
+        t1Analyser.smoothingTimeConstant = 0.85;
         
-        var analyser = ctx.createAnalyser();
-        analyser.minDecibels = -90;
-        analyser.maxDecibels = -10;
-        analyser.smoothingTimeConstant = 0.85;
-              
-        delayFeedback.connect(delayFilter);
-        delay.connect(delayFeedback);
-        delayFilter.connect(delay);
-        delay.connect(delayGain);
-        delayGain.connect(gainNode);
-        gainNode.connect(analyser);
-        analyser.connect(ctx.destination);
-        //End of creating delay variables
-       
+        var t1Distortion = ctx.createWaveShaper();
         
-        var distortion = ctx.createWaveShaper();
-        distortion.connect(gainNode);
+        var t1LowshelfFilter = ctx.createBiquadFilter();
+        t1LowshelfFilter.type = "lowshelf";
+        t1LowshelfFilter.frequency.value = 40;
+        t1LowshelfFilter.gain.value = 25;
+        //Finish setting up nodes for track 1------------------
+
+        //Connecting nodes together for track 1
+        t1GainNode.connect(t1LowshelfFilter);
+        t1LowshelfFilter.connect(t1Distortion);
+        t1Distortion.connect(t1Analyser);
+        t1Analyser.connect(ctx.destination);
+        //Finish connecting nodes together for track 1
         
-        var lowshelfFilter = ctx.createBiquadFilter();
-        lowshelfFilter.type = "lowshelf";
-        lowshelfFilter.frequency.value = 40;
-        lowshelfFilter.gain.value = 25;
-        lowshelfFilter.connect(distortion);
+        //Setting up nodes for track 2-----------------------
+        var t2GainNode = ctx.createGain();
+        t2GainNode.gain.value = 0.5;
+        
+        var t2Analyser = ctx.createAnalyser();
+        t2Analyser.minDecibels = -90;
+        t2Analyser.maxDecibels = -10;
+        t2Analyser.smoothingTimeConstant = 0.85;
+        
+        var t2Distortion = ctx.createWaveShaper();
+        
+        var t2LowshelfFilter = ctx.createBiquadFilter();
+        t2LowshelfFilter.type = "lowshelf";
+        t2LowshelfFilter.frequency.value = 40;
+        t2LowshelfFilter.gain.value = 25;
+        //Finish setting up nodes for track 2--------------
+
+        //Connecting nodes together for track 2
+        t2GainNode.connect(t2LowshelfFilter);
+        t2LowshelfFilter.connect(t2Distortion);
+        t2Distortion.connect(t2Analyser);
+        t2Analyser.connect(ctx.destination);
+        //Finish connecting nodes together for track 2
+        
+        var intendedWidth = document.querySelector('.wrapper').clientWidth;
+        
+        var t1Canvas = document.querySelector('.visualTrack1');
+        var t1CanvasCtx = t1Canvas.getContext("2d");
+        t1Canvas.setAttribute('width',intendedWidth);
+        var t1DrawVisual;
+        
+        var t2Canvas = document.querySelector('.visualTrack2');
+        var t2CanvasCtx = t2Canvas.getContext("2d");
+        t2Canvas.setAttribute('width',intendedWidth);
+        var t2DrawVisual;
       
         //Hardcoding a single song in for now until I figure out multiple songs
-        var soundSource, songBuffer;
-        request = new XMLHttpRequest();
-        request.open('GET', 'https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/4062.mp3', true);
-        request.responseType = 'arraybuffer';
-
-        request.onload = function() {
-          var audioData = request.response;
+        var t1Source, t1Buffer, t2Source, t2Buffer;
+        t1Request = new XMLHttpRequest();
+        t1Request.open('GET', 'https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/rhcpVocal.mp3', true);
+        t1Request.responseType = 'arraybuffer';
+        
+        t2Request = new XMLHttpRequest();
+        t2Request.open('GET', 'https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/rhcpGuitar.mp3', true);
+        t2Request.responseType = 'arraybuffer';
+        
+        t1Request.onload = function() {
+          var audioData = t1Request.response;
 
           ctx.decodeAudioData(audioData, function(buffer) {
-              songBuffer = buffer;
-              soundSource = ctx.createBufferSource();
-              soundSource.buffer = songBuffer;
-              soundSource.connect(lowshelfFilter);
-              soundSource.connect(delay);
-              soundSource.loop = true;
-              soundSource.start();
-              visualize();
+              t1Buffer = buffer;
+              t1Source = ctx.createBufferSource();
+              t1Source.buffer = t1Buffer;
+              t1Source.connect(t1GainNode);
+              t1Source.loop = true;
+              t1Source.start();
+              visualize(t1Canvas, t1CanvasCtx, t1Analyser, t1DrawVisual);
+            }, function(e){ console.log("Error with decoding audio data" + e.err);});
+        };
+        
+        t2Request.onload = function() {
+          var audioData = t2Request.response;
+
+          ctx.decodeAudioData(audioData, function(buffer) {
+              t2Buffer = buffer;
+              t2Source = ctx.createBufferSource();
+              t2Source.buffer = t2Buffer;
+              t2Source.connect(t2GainNode);
+              t2Source.loop = true;
+              t2Source.start();
+              visualize(t2Canvas, t2CanvasCtx, t2Analyser, t2DrawVisual);
             }, function(e){ console.log("Error with decoding audio data" + e.err);});
         };
 
-        request.send();  
+        t1Request.send();  
+        t2Request.send();
         //End of playing single song
         
-        var canvas = document.querySelector('.visualizer');
-        var canvasCtx = canvas.getContext("2d");
-
-        var intendedWidth = document.querySelector('.wrapper').clientWidth;
-
-        canvas.setAttribute('width',intendedWidth);
-
-        var drawVisual;
-        
-        function visualize() {
+        function visualize(canvas, canvasCtx, analyser, drawVisual) {
         WIDTH = canvas.width;
         HEIGHT = canvas.height;
       
@@ -182,7 +215,6 @@ body, html {height: 100%}
         draw();
     }
 
-
         //Function to pause and resume current song onclick of button        
         function songControls() {
             if(ctx.state === 'running') {
@@ -196,30 +228,24 @@ body, html {height: 100%}
             }
         }
         //Pause and resume function end
-        
+              
         //functions to update values of volume/effects based on change in slider
-        function changeVolume(val) {
-            gainNode.gain.value = val;
+        function t1ChangeVolume(val) {           
+            t1GainNode.gain.value = val;
         }
         
-        function changeBiquad(val) {
-            lowshelfFilter.frequency.value = val;
+        function t1ChangeBiquad(val) {
+            t1LowshelfFilter.frequency.value = val;
         }
         
-        function changeDelay(val) {
-            delayGain.gain.value = val;
+        function t2ChangeVolume(val) {           
+            t2GainNode.gain.value = val;
         }
-       
-        distortion.oversample = '4x';
-        distortionCheckbox = document.querySelector("#distortionCheckbox");
-        distortionCheckbox.onchange = function() {
-            if(distortionCheckbox.checked) {
-                distortion.curve = makeDistortionCurve(50);
-            }
-            else {
-                distortion.curve = makeDistortionCurve(0);
-            }
+        
+        function t2ChangeBiquad(val) {
+            t2LowshelfFilter.frequency.value = val;
         }
+               
     </script>
 </body>
 </html>
