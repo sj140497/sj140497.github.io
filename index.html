@@ -4,16 +4,50 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway"> 
 <style>
-body,h1 {font-family: "Raleway", sans-serif}
+body,h1 {font-family: "Raleway", sans-serif} 
 body, html {height: 100%}
 .bgimg {
-    background-image: url('https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/hUPIsqu.jpg');
+    background-image: url('https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/dark-grey-background-pattern-i7.jpg');
     min-height: 100%;
     background-position: center;
     background-size: cover;
 }
+
+
+/* The slider itself */
+.slider {
+    -webkit-appearance: none;
+    width: 30%;
+    height: 12px;
+    border-radius: 5px;   
+    background: #d3d3d3;
+    outline: none;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 30px;
+    height: 12px;
+    border-radius: 50%; 
+    background: #db364a;
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+    width: 30px;
+    height: 12px;
+    border-radius: 50%;
+    background: #db364a;
+    cursor: pointer;
+}
+
+
 </style>
 <body> 
 <div class="bgimg w3-display-container w3-animate-opacity w3-text-white">
@@ -24,43 +58,32 @@ body, html {height: 100%}
     <h1 class="w3-jumbo w3-animate-top">Sean Johnson: Final Year Project</h1>
     <hr class="w3-border-grey" style="margin:auto;width:40%">
     <p class="w3-large w3-center">Digital Audio Workstation</p>
-    <p class="w3-center">Track 1
-    <canvas class="visualTrack1" width="640" height="100"></canvas>
-    Volume <input type="range" name="volumeControl" min="0" max="1" step="any" onchange="t1ChangeVolume(this.value);"> <br />
-    Bass Boost <input type="range" name="biquadControl" min="40" max="440" value = "0" step="any" onchange="t1ChangeBiquad(this.value);"> <br />
+    <p class="w3-center slidecontainer"><img src="micIcon.png">
+    <canvas class="visualTrack1" width="640" height="100" style="border:1px solid #d3d3d3;"> </canvas>
+    Volume <input type="range" name="volumeControl" id="volumeControl" min="0" max="1" step="0.05" class="slider" oninput="t1ChangeVolume(this.value);"> <span id="vc1Value">0.5</span> <br />
+    Low <input type="range" name="lowControl" min="0" max="200" value = "0" class="slider" step="1" oninput="t1ChangeLow(this.value);"> <span id="bc1Value">0</span> <br />  
     </p>
-    <p class="w3-center">Track 2
-    <canvas class="visualTrack2" width="640" height="100"></canvas>
-    Volume <input type="range" name="volumeControl2" min="0" max="1" step="any" onchange="t2ChangeVolume(this.value);"> <br />
-    Bass Boost <input type="range" name="biquadControl2" min="40" max="440" value = "0" step="any" onchange="t2ChangeBiquad(this.value);"> <br />
+    <div class="w3-center" id="t1DropArea">Drop a song here!</div>
+    <hr class="w3-border-grey" style="margin:auto;width:40%">
+    <p class="w3-center slidecontainer"><img src="guitarIcon.png">
+    <canvas class="visualTrack2" width="640" height="100" style="border:1px solid #d3d3d3;"></canvas>
+    Volume <input type="range" name="volumeControl2" min="0" max="1" step="0.05" class="slider" oninput="t2ChangeVolume(this.value);"> <span id="vc2Value">0.5</span> <br />
+    Low <input type="range" name="biquadControl2" min="0" max="200" value = "0" step="1" class="slider" oninput="t2ChangeLow(this.value);"> <span id="bc2Value">0</span> <br />
     </p>
-    <canvas class="visualTrack2" width="640" height="100"></canvas> 
+    <div class="w3-center" id="t2DropArea">Drop a song here!</div>
+    <hr class="w3-border-grey" style="margin:auto;width:40%">
     <button id="songControl" onclick="songControls()"> Pause </button>
       </div>
   </div>
+    <div>Icons made by <a href="http://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
 </div>
+    
     <script>
                   
         var ctx = new (window.AudioContext || window.webkitAudioContext)();
         var voiceSelect = document.getElementById("voice");
         var source;
-        var stream;
-        
-        //Code from Kevin Ennis - Day 2 + 3 of blog:
-        function makeDistortionCurve(amount) {
-        var k = typeof amount === 'number' ? amount : 50,
-          n_samples = 44100,
-          curve = new Float32Array(n_samples),
-          deg = Math.PI / 180,
-          i = 0,
-          x;
-        for ( ; i < n_samples; ++i ) {
-          x = i * 2 / n_samples - 1;
-          curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
-        }
-        return curve;
-      };
-      
+        var stream;     
       
       //Setting up nodes for track 1----------------------------
         var t1GainNode = ctx.createGain();
@@ -75,14 +98,13 @@ body, html {height: 100%}
         
         var t1LowshelfFilter = ctx.createBiquadFilter();
         t1LowshelfFilter.type = "lowshelf";
-        t1LowshelfFilter.frequency.value = 40;
+        t1LowshelfFilter.frequency.value = 0;
         t1LowshelfFilter.gain.value = 25;
         //Finish setting up nodes for track 1------------------
 
         //Connecting nodes together for track 1
         t1GainNode.connect(t1LowshelfFilter);
-        t1LowshelfFilter.connect(t1Distortion);
-        t1Distortion.connect(t1Analyser);
+        t1LowshelfFilter.connect(t1Analyser);
         t1Analyser.connect(ctx.destination);
         //Finish connecting nodes together for track 1
         
@@ -99,14 +121,13 @@ body, html {height: 100%}
         
         var t2LowshelfFilter = ctx.createBiquadFilter();
         t2LowshelfFilter.type = "lowshelf";
-        t2LowshelfFilter.frequency.value = 40;
+        t2LowshelfFilter.frequency.value = 0;
         t2LowshelfFilter.gain.value = 25;
         //Finish setting up nodes for track 2--------------
 
         //Connecting nodes together for track 2
         t2GainNode.connect(t2LowshelfFilter);
-        t2LowshelfFilter.connect(t2Distortion);
-        t2Distortion.connect(t2Analyser);
+        t2LowshelfFilter.connect(t2Analyser);
         t2Analyser.connect(ctx.destination);
         //Finish connecting nodes together for track 2
         
@@ -121,35 +142,38 @@ body, html {height: 100%}
         var t2CanvasCtx = t2Canvas.getContext("2d");
         t2Canvas.setAttribute('width',intendedWidth);
         var t2DrawVisual;
-      
-        //Hardcoding a single song in for now until I figure out multiple songs
-        var t1Source, t1Buffer, t2Source, t2Buffer;
-        t1Request = new XMLHttpRequest();
-        t1Request.open('GET', 'https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/rhcpVocal.mp3', true);
-        t1Request.responseType = 'arraybuffer';
-        
-        t2Request = new XMLHttpRequest();
-        t2Request.open('GET', 'https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/rhcpGuitar.mp3', true);
-        t2Request.responseType = 'arraybuffer';
-        
-        t1Request.onload = function() {
-          var audioData = t1Request.response;
 
-          ctx.decodeAudioData(audioData, function(buffer) {
+        var t1DropArea = document.getElementById('t1DropArea');
+        t1DropArea.addEventListener('drop', t1Drop, false);
+        t1DropArea.addEventListener('dragover', dragOver, false);
+        
+        var t2DropArea = document.getElementById('t2DropArea');
+        t2DropArea.addEventListener('drop', t2Drop, false);
+        t2DropArea.addEventListener('dragover', dragOver, false);
+        
+        
+
+        function t1InitAudio(data) {
+        source = ctx.createBufferSource();
+
+        if(ctx.decodeAudioData) {
+            ctx.decodeAudioData(data, function(buffer) {
               t1Buffer = buffer;
               t1Source = ctx.createBufferSource();
               t1Source.buffer = t1Buffer;
               t1Source.connect(t1GainNode);
               t1Source.loop = true;
-              t1Source.start();
-              visualize(t1Canvas, t1CanvasCtx, t1Analyser, t1DrawVisual);
+              t1Source.start();             
+              visualize(t1Canvas, t1CanvasCtx, t1Analyser, t1DrawVisual);            
             }, function(e){ console.log("Error with decoding audio data" + e.err);});
         };
+        }
         
-        t2Request.onload = function() {
-          var audioData = t2Request.response;
+        function t2InitAudio(data) {
+        source = ctx.createBufferSource();
 
-          ctx.decodeAudioData(audioData, function(buffer) {
+        if(ctx.decodeAudioData) {
+            ctx.decodeAudioData(data, function(buffer) {
               t2Buffer = buffer;
               t2Source = ctx.createBufferSource();
               t2Source.buffer = t2Buffer;
@@ -159,18 +183,54 @@ body, html {height: 100%}
               visualize(t2Canvas, t2CanvasCtx, t2Analyser, t2DrawVisual);
             }, function(e){ console.log("Error with decoding audio data" + e.err);});
         };
+        }
+        
+        function t1Drop(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
 
-        t1Request.send();  
-        t2Request.send();
-        //End of playing single song
+        var droppedFiles = evt.dataTransfer.files;
+
+        var reader = new FileReader();
+
+
+        reader.onload = function(fileEvent) {
+            var data = fileEvent.target.result;
+            t1InitAudio(data);
+        }
+        reader.readAsArrayBuffer(droppedFiles[0]);
+        }
+        
+        function t2Drop(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+
+        var droppedFiles = evt.dataTransfer.files;
+
+        var reader = new FileReader();
+
+        reader.onload = function(fileEvent) {
+            var data = fileEvent.target.result;
+            t2InitAudio(data);
+        }
+        reader.readAsArrayBuffer(droppedFiles[0]);
+        }
+    
+        function dragOver(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        return false;
+    }
+    
+    
         
         function visualize(canvas, canvasCtx, analyser, drawVisual) {
         WIDTH = canvas.width;
         HEIGHT = canvas.height;
       
 
-        analyser.fftSize = 2048;
-        var bufferLength = analyser.fftSize;
+        analyser.fftSize = 256;
+        var bufferLength = analyser.frequencyBinCount;
         console.log(bufferLength);
         console.log("visualize");
         var dataArray = new Uint8Array(bufferLength);
@@ -182,35 +242,23 @@ body, html {height: 100%}
 
           drawVisual = requestAnimationFrame(draw);
 
-          analyser.getByteTimeDomainData(dataArray);
+          analyser.getByteFrequencyData(dataArray);
 
-          canvasCtx.fillStyle = 'rgb(200, 200, 200)';
+          canvasCtx.fillStyle = 'rgb(0, 0, 0)';
           canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
-          canvasCtx.lineWidth = 2;
-          canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
-
-          canvasCtx.beginPath();
-
-          var sliceWidth = WIDTH * 1.0 / bufferLength;
+          var barWidth = (WIDTH / bufferLength) * 2.5;
+          var barHeight;
           var x = 0;
-
+          
           for(var i = 0; i < bufferLength; i++) {
+            barHeight = dataArray[i]/2;
 
-            var v = dataArray[i] / 128.0;
-            var y = v * HEIGHT/2;
+            canvasCtx.fillStyle = 'rgb(' + (barHeight+100) + ',50,50)';
+            canvasCtx.fillRect(x,HEIGHT-barHeight/2,barWidth,barHeight);
 
-            if(i === 0) {
-              canvasCtx.moveTo(x, y);
-            } else {
-              canvasCtx.lineTo(x, y);
-            }
-
-            x += sliceWidth;
+            x += barWidth + 1;
           }
-
-          canvasCtx.lineTo(canvas.width, canvas.height/2);
-          canvasCtx.stroke();
         };
         draw();
     }
@@ -232,20 +280,23 @@ body, html {height: 100%}
         //functions to update values of volume/effects based on change in slider
         function t1ChangeVolume(val) {           
             t1GainNode.gain.value = val;
+            document.getElementById('vc1Value').innerHTML = val;
         }
         
-        function t1ChangeBiquad(val) {
+        function t1ChangeLow(val) {
             t1LowshelfFilter.frequency.value = val;
+            document.getElementById('bc1Value').innerHTML = (val / 2);
         }
         
         function t2ChangeVolume(val) {           
             t2GainNode.gain.value = val;
+            document.getElementById('vc2Value').innerHTML = val;
         }
         
-        function t2ChangeBiquad(val) {
+        function t2ChangeLow(val) {
             t2LowshelfFilter.frequency.value = val;
+            document.getElementById('bc2Value').innerHTML = (val / 2);
         }
-               
     </script>
 </body>
 </html>
