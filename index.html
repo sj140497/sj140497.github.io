@@ -58,14 +58,14 @@ body, html {height: 100%}
     <h1 class="w3-jumbo w3-animate-top">Sean Johnson: Final Year Project</h1>
     <hr class="w3-border-grey" style="margin:auto;width:40%">
     <p class="w3-large w3-center">Digital Audio Workstation</p>
-    <p class="w3-center slidecontainer"><img src="micIcon.png">
+    <p class="w3-center slidecontainer"><img src="https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/micIcon.png">
     <canvas class="visualTrack1" width="640" height="100" style="border:1px solid #d3d3d3;"> </canvas>
     Volume <input type="range" name="volumeControl" id="volumeControl" min="0" max="1" step="0.05" class="slider" oninput="t1ChangeVolume(this.value);"> <span id="vc1Value">0.5</span> <br />
     Low <input type="range" name="lowControl" min="0" max="200" value = "0" class="slider" step="1" oninput="t1ChangeLow(this.value);"> <span id="bc1Value">0</span> <br />  
     </p>
     <div class="w3-center" id="t1DropArea">Drop a song here!</div>
     <hr class="w3-border-grey" style="margin:auto;width:40%">
-    <p class="w3-center slidecontainer"><img src="guitarIcon.png">
+    <p class="w3-center slidecontainer"><img src="https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/guitarIcon.png">
     <canvas class="visualTrack2" width="640" height="100" style="border:1px solid #d3d3d3;"></canvas>
     Volume <input type="range" name="volumeControl2" min="0" max="1" step="0.05" class="slider" oninput="t2ChangeVolume(this.value);"> <span id="vc2Value">0.5</span> <br />
     Low <input type="range" name="biquadControl2" min="0" max="200" value = "0" step="1" class="slider" oninput="t2ChangeLow(this.value);"> <span id="bc2Value">0</span> <br />
