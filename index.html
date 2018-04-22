@@ -14,8 +14,6 @@ body, html {height: 100%}
     background-position: center;
     background-size: cover;
 }
-
-
 /* The slider itself */
 .slider {
     -webkit-appearance: none;
@@ -28,7 +26,6 @@ body, html {height: 100%}
     -webkit-transition: .2s;
     transition: opacity .2s;
 }
-
 .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
@@ -38,7 +35,6 @@ body, html {height: 100%}
     background: #db364a;
     cursor: pointer;
 }
-
 .slider::-moz-range-thumb {
     width: 30px;
     height: 12px;
@@ -46,8 +42,6 @@ body, html {height: 100%}
     background: #db364a;
     cursor: pointer;
 }
-
-
 </style>
 <body> 
 <div class="bgimg w3-display-container w3-animate-opacity w3-text-white">
@@ -58,78 +52,63 @@ body, html {height: 100%}
     <h1 class="w3-jumbo w3-animate-top">Sean Johnson: Final Year Project</h1>
     <hr class="w3-border-grey" style="margin:auto;width:40%">
     <p class="w3-large w3-center">Digital Audio Workstation</p>
-    <p class="w3-center slidecontainer"><img src="https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/micIcon.png">
-    <canvas class="visualTrack1" width="640" height="100" style="border:1px solid #d3d3d3;"> </canvas>
+    <p class="w3-center"> <canvas class="visualTrack1" width="640" height="100" style="border:1px solid #d3d3d3;"> </canvas> </p>
+    <p class="w3-left"><img src="https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/micIcon.png"></p>
+    <p class="w3-right"><input type="image" src="https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/playButton.png" id="t1Play" onclick="t1Play();" /> 
+    <p class="w3-center slidecontainer">
     Volume <input type="range" name="volumeControl" id="volumeControl" min="0" max="1" step="0.05" class="slider" oninput="t1ChangeVolume(this.value);"> <span id="vc1Value">0.5</span> <br />
     Low <input type="range" name="lowControl" min="0" max="200" value = "0" class="slider" step="1" oninput="t1ChangeLow(this.value);"> <span id="bc1Value">0</span> <br />  
+    Distortion <input type="range" id="distortionControl" min="0" max="100" value = "0" class="slider" step="1" oninput="t1ChangeDistortion(this.value);"> <span id="d1Value">0</span> <br />  
     </p>
-    <div class="w3-center" id="t1DropArea">Drop a song here!</div>
-    <hr class="w3-border-grey" style="margin:auto;width:40%">
-    <p class="w3-center slidecontainer"><img src="https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/guitarIcon.png">
-    <canvas class="visualTrack2" width="640" height="100" style="border:1px solid #d3d3d3;"></canvas>
+    <div class="w3-center" id="t1DropArea">Drop a song here! <hr class="w3-border-grey" style="margin:auto;width:40%"></div>
+    <p class="w3-center"><canvas class="visualTrack2" width="640" height="100" style="border:1px solid #d3d3d3;"></canvas> </p>
+    <p class="w3-left"><img src="https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/guitarIcon.png"></p>
+    <p class="w3-right"><input type="image" src="https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/playButton.png" id="t2Play" onclick="t2Play();"> </p> 
+    <p class="w3-center slidecontainer">
     Volume <input type="range" name="volumeControl2" min="0" max="1" step="0.05" class="slider" oninput="t2ChangeVolume(this.value);"> <span id="vc2Value">0.5</span> <br />
     Low <input type="range" name="biquadControl2" min="0" max="200" value = "0" step="1" class="slider" oninput="t2ChangeLow(this.value);"> <span id="bc2Value">0</span> <br />
+    Distortion <input type="range" id="distortionControl2" min="0" max="100" value = "0" class="slider" step="1" oninput="t2ChangeDistortion(this.value);"> <span id="d2Value">0</span> <br />
     </p>
     <div class="w3-center" id="t2DropArea">Drop a song here!</div>
     <hr class="w3-border-grey" style="margin:auto;width:40%">
-    <button id="songControl" onclick="songControls()"> Pause </button>
       </div>
   </div>
-    <div>Icons made by <a href="http://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
+    
+    <div>Icons made by <a href="http://www.freepik.com" title="Freepik">Freepik</a>
+        and <a href="https://www.flaticon.com/authors/daniel-bruce" title="Daniel Bruce">Daniel Bruce</a> 
+        from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by 
+        <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a>
+    </div>
 </div>
     
-    <script>
-                  
-        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    <script>              
+        var t1Ctx = new (window.AudioContext || window.webkitAudioContext)();
+        var t2Ctx = new (window.AudioContext || window.webkitAudioContext)();
         var voiceSelect = document.getElementById("voice");
         var source;
-        var stream;     
-      
-      //Setting up nodes for track 1----------------------------
-        var t1GainNode = ctx.createGain();
-        t1GainNode.gain.value = 0.5;
+        var stream; 
+        var t1GainNode;
+        var t1Analyser;
+        var t1Distortion;
+        var t1LowshelfFilter;
+        var t2GainNode;
+        var t2Analyser;
+        var t2Distortion;
+        var t2LowshelfFilter;
         
-        var t1Analyser = ctx.createAnalyser();
-        t1Analyser.minDecibels = -90;
-        t1Analyser.maxDecibels = -10;
-        t1Analyser.smoothingTimeConstant = 0.85;
-        
-        var t1Distortion = ctx.createWaveShaper();
-        
-        var t1LowshelfFilter = ctx.createBiquadFilter();
-        t1LowshelfFilter.type = "lowshelf";
-        t1LowshelfFilter.frequency.value = 0;
-        t1LowshelfFilter.gain.value = 25;
-        //Finish setting up nodes for track 1------------------
-
-        //Connecting nodes together for track 1
-        t1GainNode.connect(t1LowshelfFilter);
-        t1LowshelfFilter.connect(t1Analyser);
-        t1Analyser.connect(ctx.destination);
-        //Finish connecting nodes together for track 1
-        
-        //Setting up nodes for track 2-----------------------
-        var t2GainNode = ctx.createGain();
-        t2GainNode.gain.value = 0.5;
-        
-        var t2Analyser = ctx.createAnalyser();
-        t2Analyser.minDecibels = -90;
-        t2Analyser.maxDecibels = -10;
-        t2Analyser.smoothingTimeConstant = 0.85;
-        
-        var t2Distortion = ctx.createWaveShaper();
-        
-        var t2LowshelfFilter = ctx.createBiquadFilter();
-        t2LowshelfFilter.type = "lowshelf";
-        t2LowshelfFilter.frequency.value = 0;
-        t2LowshelfFilter.gain.value = 25;
-        //Finish setting up nodes for track 2--------------
-
-        //Connecting nodes together for track 2
-        t2GainNode.connect(t2LowshelfFilter);
-        t2LowshelfFilter.connect(t2Analyser);
-        t2Analyser.connect(ctx.destination);
-        //Finish connecting nodes together for track 2
+        function makeDistortionCurve( amount ) {
+        var k = typeof amount === 'number' ? amount : 50,
+          n_samples = 44100,
+          curve = new Float32Array(n_samples),
+          deg = Math.PI / 180,
+          i = 0,
+          x;
+        for ( ; i < n_samples; ++i ) {
+          x = i * 2 / n_samples - 1;
+          curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
+        }
+        return curve;
+      };
         
         var intendedWidth = document.querySelector('.wrapper').clientWidth;
         
@@ -142,7 +121,6 @@ body, html {height: 100%}
         var t2CanvasCtx = t2Canvas.getContext("2d");
         t2Canvas.setAttribute('width',intendedWidth);
         var t2DrawVisual;
-
         var t1DropArea = document.getElementById('t1DropArea');
         t1DropArea.addEventListener('drop', t1Drop, false);
         t1DropArea.addEventListener('dragover', dragOver, false);
@@ -152,35 +130,91 @@ body, html {height: 100%}
         t2DropArea.addEventListener('dragover', dragOver, false);
         
         
-
         function t1InitAudio(data) {
-        source = ctx.createBufferSource();
-
-        if(ctx.decodeAudioData) {
-            ctx.decodeAudioData(data, function(buffer) {
+        if(t1Ctx.state === 'running') {
+               t1Ctx.close();
+           }
+        t1Ctx = new (window.AudioContext || window.webkitAudioContext)();
+        source = t1Ctx.createBufferSource();
+        
+        //Setting up nodes for track 1----------------------------
+        t1GainNode = t1Ctx.createGain();
+        t1GainNode.gain.value = 0.5;
+        
+        t1Analyser = t1Ctx.createAnalyser();
+        t1Analyser.minDecibels = -90;
+        t1Analyser.maxDecibels = -10;
+        t1Analyser.smoothingTimeConstant = 0.85;
+        
+        t1Distortion = t1Ctx.createWaveShaper();
+        
+        t1LowshelfFilter = t1Ctx.createBiquadFilter();
+        t1LowshelfFilter.type = "lowshelf";
+        t1LowshelfFilter.frequency.value = 0;
+        t1LowshelfFilter.gain.value = 25;
+        //Finish setting up nodes for track 1------------------
+        //Connecting nodes together for track 1
+        t1GainNode.connect(t1LowshelfFilter);
+        t1LowshelfFilter.connect(t1Distortion);
+        t1Distortion.connect(t1Analyser);
+        t1Analyser.connect(t1Ctx.destination);
+        //Finish connecting nodes together for track 1
+        
+        if(t1Ctx.decodeAudioData) {
+            t1Ctx.decodeAudioData(data, function(buffer) {
               t1Buffer = buffer;
-              t1Source = ctx.createBufferSource();
+              t1Source = t1Ctx.createBufferSource();
               t1Source.buffer = t1Buffer;
               t1Source.connect(t1GainNode);
               t1Source.loop = true;
               t1Source.start();             
-              visualize(t1Canvas, t1CanvasCtx, t1Analyser, t1DrawVisual);            
+              visualize(t1Canvas, t1CanvasCtx, t1Analyser, t1DrawVisual);
+              t1Ctx.suspend();
             }, function(e){ console.log("Error with decoding audio data" + e.err);});
         };
         }
         
         function t2InitAudio(data) {
-        source = ctx.createBufferSource();
-
-        if(ctx.decodeAudioData) {
-            ctx.decodeAudioData(data, function(buffer) {
+        if(t2Ctx.state === 'running') {
+               t2Ctx.close();
+           }
+        t2Ctx = new (window.AudioContext || window.webkitAudioContext)();
+        source = t2Ctx.createBufferSource();
+        
+        //Setting up nodes for track 2-----------------------
+        t2GainNode = t2Ctx.createGain();
+        t2GainNode.gain.value = 0.5;
+        
+        t2Analyser = t2Ctx.createAnalyser();
+        t2Analyser.minDecibels = -90;
+        t2Analyser.maxDecibels = -10;
+        t2Analyser.smoothingTimeConstant = 0.85;
+        
+        t2Distortion = t2Ctx.createWaveShaper();
+        
+        t2LowshelfFilter = t2Ctx.createBiquadFilter();
+        t2LowshelfFilter.type = "lowshelf";
+        t2LowshelfFilter.frequency.value = 0;
+        t2LowshelfFilter.gain.value = 25;
+        //Finish setting up nodes for track 2--------------
+        //Connecting nodes together for track 2
+        t2GainNode.connect(t2LowshelfFilter);
+        t2LowshelfFilter.connect(t2Distortion);
+        t2Distortion.connect(t2Analyser);
+        t2Analyser.connect(t2Ctx.destination);
+        t2Ctx.suspend();
+        //Finish connecting nodes together for track 2
+        
+        if(t2Ctx.decodeAudioData) {
+            t2Ctx.decodeAudioData(data, function(buffer) {
               t2Buffer = buffer;
-              t2Source = ctx.createBufferSource();
+              t2Source = t2Ctx.createBufferSource();
               t2Source.buffer = t2Buffer;
               t2Source.connect(t2GainNode);
               t2Source.loop = true;
               t2Source.start();
               visualize(t2Canvas, t2CanvasCtx, t2Analyser, t2DrawVisual);
+              
             }, function(e){ console.log("Error with decoding audio data" + e.err);});
         };
         }
@@ -188,12 +222,8 @@ body, html {height: 100%}
         function t1Drop(evt) {
         evt.stopPropagation();
         evt.preventDefault();
-
         var droppedFiles = evt.dataTransfer.files;
-
         var reader = new FileReader();
-
-
         reader.onload = function(fileEvent) {
             var data = fileEvent.target.result;
             t1InitAudio(data);
@@ -204,11 +234,8 @@ body, html {height: 100%}
         function t2Drop(evt) {
         evt.stopPropagation();
         evt.preventDefault();
-
         var droppedFiles = evt.dataTransfer.files;
-
         var reader = new FileReader();
-
         reader.onload = function(fileEvent) {
             var data = fileEvent.target.result;
             t2InitAudio(data);
@@ -228,50 +255,51 @@ body, html {height: 100%}
         WIDTH = canvas.width;
         HEIGHT = canvas.height;
       
-
         analyser.fftSize = 256;
         var bufferLength = analyser.frequencyBinCount;
         console.log(bufferLength);
-        console.log("visualize");
         var dataArray = new Uint8Array(bufferLength);
-
         canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
-
         var draw = function() {
-            console.log("draw call");
-
+          //console.log("draw call");
           drawVisual = requestAnimationFrame(draw);
-
           analyser.getByteFrequencyData(dataArray);
-
           canvasCtx.fillStyle = 'rgb(0, 0, 0)';
           canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
-
           var barWidth = (WIDTH / bufferLength) * 2.5;
           var barHeight;
           var x = 0;
           
           for(var i = 0; i < bufferLength; i++) {
             barHeight = dataArray[i]/2;
-
             canvasCtx.fillStyle = 'rgb(' + (barHeight+100) + ',50,50)';
             canvasCtx.fillRect(x,HEIGHT-barHeight/2,barWidth,barHeight);
-
             x += barWidth + 1;
           }
         };
         draw();
     }
-
         //Function to pause and resume current song onclick of button        
-        function songControls() {
-            if(ctx.state === 'running') {
-                ctx.suspend().then(function() {
-                    document.getElementById("songControl").textContent = "Resume";
+        function t1Play() {
+            if(t1Ctx.state === 'running') {
+                t1Ctx.suspend().then(function() {
+                    document.getElementById("t1Play").src='https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/playButton.png'
                 });
-            } else if(ctx.state === 'suspended') {
-                ctx.resume().then(function() {
-                    document.getElementById("songControl").textContent = "Pause";
+            } else if(t1Ctx.state === 'suspended') {
+                t1Ctx.resume().then(function() {
+                    document.getElementById("t1Play").src='https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/pauseButton.png'
+                });
+            }
+        }
+        
+        function t2Play() {
+            if(t2Ctx.state === 'running') {
+                t2Ctx.suspend().then(function() {
+                    document.getElementById("t2Play").src='https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/playButton.png'
+                });
+            } else if(t2Ctx.state === 'suspended') {
+                t2Ctx.resume().then(function() {
+                    document.getElementById("t2Play").src='https://raw.githubusercontent.com/sj140497/FinalYearDAW/master/Misc/pauseButton.png'
                 });
             }
         }
@@ -288,6 +316,11 @@ body, html {height: 100%}
             document.getElementById('bc1Value').innerHTML = (val / 2);
         }
         
+        function t1ChangeDistortion(val) {
+            t1Distortion.curve = makeDistortionCurve(val * 5);
+            document.getElementById('d1Value').innerHTML = (val);
+        }
+        
         function t2ChangeVolume(val) {           
             t2GainNode.gain.value = val;
             document.getElementById('vc2Value').innerHTML = val;
@@ -296,6 +329,11 @@ body, html {height: 100%}
         function t2ChangeLow(val) {
             t2LowshelfFilter.frequency.value = val;
             document.getElementById('bc2Value').innerHTML = (val / 2);
+        }
+        
+        function t2ChangeDistortion(val) {
+            t2Distortion.curve = makeDistortionCurve(val * 5);
+            document.getElementById('d2Value').innerHTML = (val);
         }
     </script>
 </body>
